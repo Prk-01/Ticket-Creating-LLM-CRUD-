@@ -40,7 +40,7 @@ def get_openai_api_key():
     if input_text:
         os.environ["OPENAI_API_KEY"] = input_text
     return input_text
-
+os.environ["OPENAI_API_KEY"] ="###"
 openai_api_key = get_openai_api_key()
 
 st.title("Ticket bot")
