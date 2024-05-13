@@ -76,6 +76,7 @@ if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
                     #Check API is valid!
                     if 'Incorrect API' in str(e):
                         response="Please Enter a valid Openai API Key"
+                        print(os.environ["OPENAI_API_KEY"])
                         highlight("#DE583E")
                     else:
                         response = "Application error please refresh or re-check your request!"
