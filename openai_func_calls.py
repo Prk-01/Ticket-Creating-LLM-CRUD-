@@ -95,7 +95,7 @@ class TicketBot:
         ticket["ticket_description"] = ticket_description
         ticket["ticket_priority"] = ticket_priority
         self.db.insert_one(ticket)
-        self.memory.append({"role": "assistant", "content": f"Your ticket id is {ticket["ticket_id"]}"})
+        self.memory.append({"role": "assistant", "content": f"Your ticket id is {ticket['ticket_id']}"})
         return f'''I Apologize for your inconvenience we have all your information we will contact you soon, 
         your ticket number is "{ticket["ticket_id"]}". 
         Please remember ticket number as is it important for further support reference'''
