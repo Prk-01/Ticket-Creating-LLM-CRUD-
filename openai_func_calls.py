@@ -26,6 +26,7 @@ class TicketBot:
         self.memory = []
         self.memory.append(self.default)
         self.db = db
+        _self.open_api_key=open_api_key
 
     def chat(self, query):
         self.memory.append({"role": "user", "content": query})
@@ -59,7 +60,7 @@ class TicketBot:
             temperature=0,
             messages=self.memory,
             functions=[get_create_ticket_fn, get_read_ticket_fn, get_delete_ticket_fn, get_update_ticket_fn],
-            openai_api_key=openai_api_key,
+            openai_api_key=self.openai_api_key,
         )
         return response
 
@@ -69,7 +70,7 @@ class TicketBot:
             model="gpt-3.5-turbo-0613",
             temperature=0,
             messages=self.memory,
-            openai_api_key=openai_api_key,
+            openai_api_key=self.openai_api_key,
         )
         return response
 
