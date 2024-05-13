@@ -74,12 +74,12 @@ if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
                 except Exception as e:
                     #Check API is valid!
                     if 'Incorrect API' in str(e):
-                        response="Please Enter a valid Open API Key"
+                        response="Please Enter a valid Openai API Key"
                         highlight("#DE583E")
                     else:
                         response = "Application error please refresh or re-check your request!"
             else:
-                response="Missing Open api API key on above text box"
+                response="Missing Openai API key on above text box"
                 highlight("#DE583E")
             st.write(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
