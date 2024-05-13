@@ -1,11 +1,12 @@
 import streamlit as st
 import os
-from dotenv import load_dotenv, find_dotenv
+# from dotenv import load_dotenv, find_dotenv
 from openai_func_calls import TicketBot
 from pymongo import MongoClient
-_ = load_dotenv(find_dotenv())
-openai_api_key = os.environ["OPENAI_API_KEY"]
-db_uri=os.environ["MONGODB_URI"]
+# _ = load_dotenv(find_dotenv())
+# openai_api_key = os.environ["OPENAI_API_KEY"]
+openai_api_key=st.secrets["OPENAI_API_KEY"]
+db_uri=st.secrets["MONGODB_URI"]
 mongodb_client = MongoClient(db_uri)
 database = mongodb_client.tickets
 ticketdb=database.ticketdb
