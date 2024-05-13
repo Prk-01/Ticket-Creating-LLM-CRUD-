@@ -5,7 +5,7 @@ from openai_func_calls import TicketBot
 from pymongo import MongoClient
 # _ = load_dotenv(find_dotenv())
 # openai_api_key = os.environ["OPENAI_API_KEY"]
-openai_api_key=st.secrets["OPENAI_API_KEY"]
+os.environ['OPENAI_API_KEY']=st.secrets["OPENAI_API_KEY"]
 db_uri=st.secrets["MONGODB_URI"]
 mongodb_client = MongoClient(db_uri)
 database = mongodb_client.tickets
@@ -45,7 +45,7 @@ if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
 
         with st.chat_message("assistant"):
             if st.session_state['key']>0:
-                bot=TicketBot(ticketdb,openai_api_key)
+                bot=TicketBot(ticketdb)
                 response = bot.chat(prompt).content
                 st.session_state['key'] -= 1
             else:
