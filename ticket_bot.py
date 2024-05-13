@@ -16,10 +16,7 @@ st.set_page_config(
     page_icon="🤖"
 )
 
-
-st.title("Ticket bot")
 # Simple implementation for application demo in testing
-st.warning("Note this a demo application under testing you can only run 10 requests")
 
 #Session for limiting openai queries
 # if 'key' not in st.session_state:
@@ -45,6 +42,8 @@ def get_openai_api_key():
     return input_text
 
 openai_api_key = get_openai_api_key()
+
+st.title("Ticket bot")
 
 #streamlit chat session history
 #not syncing chat history with streamlit session history and bot as this for testing and working on full_stack feature
@@ -73,7 +72,12 @@ if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
                     response = bot.chat(prompt).content
                     # st.session_state['key'] -= 1
                 except Exception as e:
-                    response = "Application error please refresh or re-check your request!"
+                    #Check API is valid!
+                    if 'Incorrect API' in str(e):
+                        response="Please Enter a valid Open API Key"
+                        highlight("#DE583E")
+                    else:
+                        response = "Application error please refresh or re-check your request!"
             else:
                 response="Missing Open api API key on above text box"
                 highlight("#DE583E")
