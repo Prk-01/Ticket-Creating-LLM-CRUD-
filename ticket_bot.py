@@ -45,7 +45,7 @@ if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
 
         with st.chat_message("assistant"):
             if st.session_state['key']>0:
-                bot=TicketBot(ticketdb)
+                bot=TicketBot(ticketdb,openai_api_key)
                 response = bot.chat(prompt).content
                 st.session_state['key'] -= 1
             else:
