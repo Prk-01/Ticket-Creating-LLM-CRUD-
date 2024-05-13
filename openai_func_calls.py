@@ -5,7 +5,7 @@ from crud_openai_func import get_read_ticket_fn,get_create_ticket_fn,get_update_
 
 #Ticket bot creation
 class TicketBot:
-    def __init__(self, db):
+    def __init__(self, db,openai_api_key):
         # default prompt for bot
         self.default = {
             "role": "system",
@@ -59,6 +59,7 @@ class TicketBot:
             temperature=0,
             messages=self.memory,
             functions=[get_create_ticket_fn, get_read_ticket_fn, get_delete_ticket_fn, get_update_ticket_fn],
+            openai_api_key=openai_api_key,
         )
         return response
 
@@ -68,6 +69,7 @@ class TicketBot:
             model="gpt-3.5-turbo-0613",
             temperature=0,
             messages=self.memory,
+            openai_api_key=openai_api_key,
         )
         return response
 
