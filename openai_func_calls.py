@@ -26,7 +26,7 @@ class TicketBot:
         self.memory = []
         self.memory.append(self.default)
         self.db = db
-        _self.openai_api_key=openai_api_key
+        self.openai_api_key=openai_api_key
 
     def chat(self, query):
         self.memory.append({"role": "user", "content": query})
