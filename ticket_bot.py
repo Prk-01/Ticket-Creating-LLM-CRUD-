@@ -19,8 +19,9 @@ st.set_page_config(
 # Simple implementation for application demo in testing
 
 #Session for limiting openai queries
-# if 'key' not in st.session_state:
-#     st.session_state['key'] = 10
+if 'key' not in st.session_state:
+    st.session_state['key'] = '###'
+    os.environ["OPENAI_API_KEY"] =st.session_state['key']
 
 #Api-key Text box highlight
 def highlight(color):
@@ -40,7 +41,7 @@ def get_openai_api_key():
     if input_text:
         os.environ["OPENAI_API_KEY"] = input_text
     return input_text
-os.environ["OPENAI_API_KEY"] ="###"
+
 openai_api_key = get_openai_api_key()
 
 st.title("Ticket bot")
