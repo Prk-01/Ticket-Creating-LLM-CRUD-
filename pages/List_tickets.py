@@ -1,11 +1,11 @@
 import streamlit as st
 import os
-from dotenv import load_dotenv, find_dotenv
-_ = load_dotenv(find_dotenv())
+# from dotenv import load_dotenv, find_dotenv
+# _ = load_dotenv(find_dotenv())
 from pymongo import MongoClient
 
 #DB connection
-db_uri=os.environ["MONGODB_URI"]
+db_uri=st.secrets["MONGODB_URI"]
 mongodb_client = MongoClient(db_uri)
 database = mongodb_client.tickets
 ticketdb=database.ticketdb
