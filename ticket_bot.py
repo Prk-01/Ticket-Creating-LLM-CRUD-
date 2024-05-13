@@ -20,8 +20,7 @@ st.set_page_config(
 
 #Session for limiting openai queries
 if 'key' not in st.session_state:
-    st.session_state['key'] = '###'
-    os.environ["OPENAI_API_KEY"] =st.session_state['key']
+    st.session_state['key'] = 'False'
 
 #Api-key Text box highlight
 def highlight(color):
@@ -69,7 +68,9 @@ if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
             if openai_api_key:
             # if st.session_state['key']>0:
                 try:
-                    bot=TicketBot(ticketdb)
+                    if !st.session_state['key']:
+                        bot=TicketBot(ticketdb)
+                        st.session_state['key']=True
                     response = bot.chat(prompt).content
                     # st.session_state['key'] -= 1
                 except Exception as e:
