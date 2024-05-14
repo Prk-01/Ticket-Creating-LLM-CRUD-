@@ -1,3 +1,4 @@
+import openai
 from openai import OpenAI
 import json
 from crud_openai_func import get_read_ticket_fn,get_create_ticket_fn,get_update_ticket_fn,get_delete_ticket_fn
@@ -5,10 +6,10 @@ from crud_openai_func import get_read_ticket_fn,get_create_ticket_fn,get_update_
 
 #Ticket bot creation
 class TicketBot:
-    def __init__(self, db,key="Key"):
+    def __init__(self, db,key):
         # default prompt for bot
         self.client=OpenAI(api_key=key)
-        self.default = {
+        self.default = [{
             "role": "system",
             "content": """
             
@@ -22,14 +23,11 @@ class TicketBot:
             4)Make sure to provide ticket number when a ticket is created. The ticket number is really important.
 
             """
-        }
-        #memory to mantain context
-        self.memory = []
-        self.memory.append(self.default)
+        },]
         self.db = db
 
     def chat(self, query):
-        self.memory.append({"role": "user", "content": query})
+        ticket_track=None
         response = self.make_openai_request(query)
         message = response.choices[0].message
 
@@ -37,38 +35,45 @@ class TicketBot:
         if (hasattr(message, 'function_call') & (message.function_call != None)):
             function_name = message.function_call.name
             arguments = json.loads(message.function_call.arguments)
-            function_response = getattr(self, function_name)(**arguments)
-            self.memory.append({"role": "function", "name": function_name, "content": function_response})
-
+            if function_name == "create_ticket":
+                function_response,ticket_track = getattr(self, function_name)(**arguments)
+            else:
+                function_response = getattr(self, function_name)(**arguments)
             #re-send info for bot summarized output
-            system_response = self.make_system_request()
+            if not message.content:
+                message.content=function_response
+            system_response = self.make_system_request(query[-1], message, function_name, function_response)
             system_message = system_response.choices[0].message
-            self.memory.append({"role": system_message.role, "content": system_message.content})
-            return system_message
-        self.memory.append({"role": message.role, "content": message.content})
-        return message
+            return system_message,ticket_track
+
+        return message,ticket_track
 
 
     #initial openai request for query
-    def make_openai_request(self, query):
-        #custom memory check and update to matain context-window // vector db implementation required
-        while len(str(self.memory)) > 3500:
-            self.memory=self.memory[3:]
-            self.memory.append(self.default)
+    def make_openai_request(self,memory):
+        memory=self.default+memory
         response = self.client.chat.completions.create(
             model="gpt-3.5-turbo-0613",
             temperature=0,
-            messages=self.memory,
+            messages=memory,
             functions=[get_create_ticket_fn, get_read_ticket_fn, get_delete_ticket_fn, get_update_ticket_fn],
         )
         return response
 
     # follow call for openai
-    def make_system_request(self):
+    def make_system_request(self, query, message, function_name, function_response):
         response = self.client.chat.completions.create(
             model="gpt-3.5-turbo-0613",
             temperature=0,
-            messages=self.memory,
+            messages=[
+                {"role": "user", "content": query['content']},
+                message,
+                {
+                    "role": "function",
+                    "name": function_name,
+                    "content": function_response,
+                },
+            ],
         )
         return response
 
@@ -83,21 +88,24 @@ class TicketBot:
     def delete_ticket(self, ticket_id=None):
         if ticket_id:
             self.db.delete_one({"ticket_id": ticket_id})
-            return f"your ticket of {ticket_id} is successfully deleted"
+            return f"your ticket of number '{ticket_id}' is successfully deleted"
         return "I apologize I couldn't find your ticket, I request to re-check your ticket number and status."
 
     #Ticket creation, based on information fetched and summarized by openai
     def create_ticket(self, ticket_title, ticket_description, ticket_priority="low"):
-        ticket = {}
-        ticket["ticket_id"] = 'ayz' + str(self.db.estimated_document_count() + 1)
-        ticket["ticket_title"] = ticket_title
-        ticket["ticket_description"] = ticket_description
-        ticket["ticket_priority"] = ticket_priority
-        self.db.insert_one(ticket)
-        self.memory.append({"role": "assistant", "content": f"Your ticket id is {ticket['ticket_id']}"})
-        return f'''I Apologize for your inconvenience we have all your information we will contact you soon, 
-        your ticket number is "{ticket["ticket_id"]}". 
-        Please remember ticket number as is it important for further support reference'''
+        try:
+            ticket = {}
+            ticket["ticket_id"] = 'ayz' + str(self.db.estimated_document_count() + 1)
+            ticket["ticket_title"] = ticket_title
+            ticket["ticket_description"] = ticket_description
+            ticket["ticket_priority"] = ticket_priority
+            self.db.insert_one(ticket)
+
+            return f'''Thank you, We have all your information we will contact you soon for assisting you in your problems, 
+            your ticket number is "{ticket["ticket_id"]}". 
+            Please remember ticket number as is it important for further support reference''',{'Ticket created':ticket["ticket_id"]}
+        except Exception as e:
+            return "I Apologize, Database down ticket could not be created",None
 
     #Ticket update based on ticket_id // should work on update by dynamic features
     def update_ticket(self, ticket_id=None, ticket_title=None, ticket_description=None, ticket_priority=None):
@@ -113,13 +121,5 @@ class TicketBot:
             self.db.update_one({"ticket_id": ticket_id}, {"$set": ticket_data})
             return f"Ticket updated successfully, You updated {str(updated)}"
         return "I apologize I couldn't find your ticket, I request to re-check your ticket number and status."
-
-
-
-
-
-
-
-
 
 
