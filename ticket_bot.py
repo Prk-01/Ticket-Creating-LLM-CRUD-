@@ -1,11 +1,13 @@
 import streamlit as st
-import os
-# from dotenv import load_dotenv, find_dotenv
 from openai_func_calls import TicketBot
 from pymongo import MongoClient
+
+#Streamlit has Toml env
+# import os
+# from dotenv import load_dotenv, find_dotenv
 # _ = load_dotenv(find_dotenv())
-# openai_api_key = os.environ["OPENAI_API_KEY"]
-# os.environ['OPENAI_API_KEY']=st.secrets["OPENAI_API_KEY"]
+
+#database connection config // only for streamlit testing
 db_uri=st.secrets["MONGODB_URI"]
 mongodb_client = MongoClient(db_uri)
 database = mongodb_client.tickets
@@ -16,13 +18,7 @@ st.set_page_config(
     page_icon="🤖"
 )
 
-# Simple implementation for application demo in testing
-
-#Session for limiting openai queries
-if 'key' not in st.session_state:
-    st.session_state['key'] = 'False'
-
-#Api-key Text box highlight
+#Api-key Text box indicator // for streamlit only
 def highlight(color):
     styl = f"""
     <style>
@@ -33,20 +29,24 @@ def highlight(color):
     """
     st.markdown(styl, unsafe_allow_html=True)
 
-#get User api_key
+#Get user api-key // for streamlit demo only
 def get_openai_api_key():
-    input_text = st.text_input(label="OpenAI API Key ", placeholder="Ex: sk-2twmA8tfCb8un4...", key="openai_api_key_input", type="password")
+    input_text = st.text_input(label="OpenAI API Key ", placeholder="Ex: sk-2twmA8tfCb8un4...",
+                                   key="openai_api_key_input", type="password")
     highlight(" ")
-    if input_text:
-        os.environ["OPENAI_API_KEY"] = input_text
     return input_text
 
-openai_api_key = get_openai_api_key()
+openai_api_key= get_openai_api_key()
 
-st.title("Ticket bot")
+#To maintain model instance as local chat history of streamlit is not in sync with models
+if 'flag' not in st.session_state:
+    st.session_state['flag'] = True
+
+#Title
+st.header("Ticket bot")
 
 #streamlit chat session history
-#not syncing chat history with streamlit session history and bot as this for testing and working on full_stack feature
+#Not with sync with model context has model context requires vector db implementation
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -54,7 +54,8 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-#prompt limited to less than 250 charcters
+
+#prompt limited to less than 250 charcters// 250 -> just a random number
 if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
     highlight(" ")
     if len(prompt)>250:
@@ -65,19 +66,18 @@ if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
+            # Simple error handling for streamlit demo
             if openai_api_key:
-            # if st.session_state['key']>0:
                 try:
-                    if !st.session_state['key']:
-                        bot=TicketBot(ticketdb)
-                        st.session_state['key']=True
+                    if st.session_state['flag']:
+                        st.session_state['flag'] = False
+                        bot=TicketBot(ticketdb,openai_api_key)
                     response = bot.chat(prompt).content
-                    # st.session_state['key'] -= 1
                 except Exception as e:
+                    st.session_state['flag'] = True
                     #Check API is valid!
                     if 'Incorrect API' in str(e):
                         response="Please Enter a valid Openai API Key"
-                        print(os.environ["OPENAI_API_KEY"])
                         highlight("#DE583E")
                     else:
                         response = "Application error please refresh or re-check your request!"
@@ -86,8 +86,12 @@ if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
                 highlight("#DE583E")
             st.write(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
-        #chat history reduction
+        #chat history reduction // has model may not maintain many contexts
         if len(st.session_state.messages) >8:
             st.session_state.messages=st.session_state.messages[-8:]
             st.session_state.messages.insert(0,{"role": "assistant", "content": "Previous chats are detached!"})
+
+
+
+
 
