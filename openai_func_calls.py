@@ -40,7 +40,8 @@ class TicketBot:
             else:
                 function_response = getattr(self, function_name)(**arguments)
             #re-send info for bot summarized output
-            if not message.content:
+            #if default openai replies with no content or sometimes model replies it cant delete initially
+            if not message.content or function_name=='delete_ticket':
                 message.content=function_response
             system_response = self.make_system_request(query[-1], message, function_name, function_response)
             system_message = system_response.choices[0].message
