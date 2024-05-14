@@ -13,6 +13,7 @@ mongodb_client = MongoClient(db_uri)
 database = mongodb_client.tickets
 ticketdb=database.ticketdb
 
+#streamlit meta-data page config
 st.set_page_config(
     page_title="ticket bot",
     page_icon="🤖"
@@ -38,9 +39,6 @@ def get_openai_api_key():
 
 openai_api_key= get_openai_api_key()
 
-#To maintain model instance as local chat history of streamlit is not in sync with models
-if 'flag' not in st.session_state:
-    st.session_state['flag'] = True
 
 #Title
 st.header("Ticket bot")
@@ -55,10 +53,10 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 
-#prompt limited to less than 250 charcters// 250 -> just a random number
+#prompt limited to less than 200 charcters// 200 -> just a random number
 if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
     highlight(" ")
-    if len(prompt)>250:
+    if len(prompt)>200:
         st.warning("Please state your problems within 100-150 words")
     else:
         st.session_state.messages.append({"role": "user", "content": prompt})
@@ -69,12 +67,15 @@ if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
             # Simple error handling for streamlit demo
             if openai_api_key:
                 try:
-                    if st.session_state['flag']:
-                        st.session_state['flag'] = False
-                        bot=TicketBot(ticketdb,openai_api_key)
-                    response = bot.chat(prompt).content
+                    bot=TicketBot(ticketdb,openai_api_key)
+                    response,ticket_track = bot.chat(st.session_state.messages)
+                    response=response.content
+                    # LLM might forget to mention ticket number this would lose context on current ticket
+                    if ticket_track:
+                        if list(ticket_track.values())[0] and 'ayz' not in response:
+                            response=response+f". Your Ticket number is {list(ticket_track.values())[0]}"
+
                 except Exception as e:
-                    st.session_state['flag'] = True
                     #Check API is valid!
                     if 'Incorrect API' in str(e):
                         response="Please Enter a valid Openai API Key"
@@ -86,10 +87,11 @@ if prompt := st.chat_input("Have an issue? Create a ticket help is here!"):
                 highlight("#DE583E")
             st.write(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
-        #chat history reduction // has model may not maintain many contexts
-        if len(st.session_state.messages) >8:
+        #chat history reduction // to maintain optimal context until vectordb implementaion
+        if len(str(st.session_state.messages)) > 1500:
             st.session_state.messages=st.session_state.messages[-8:]
             st.session_state.messages.insert(0,{"role": "assistant", "content": "Previous chats are detached!"})
+
 
 
 
