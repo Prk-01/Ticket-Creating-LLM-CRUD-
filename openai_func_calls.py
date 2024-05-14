@@ -1,12 +1,13 @@
-import openai
+from openai import OpenAI
 import json
 from crud_openai_func import get_read_ticket_fn,get_create_ticket_fn,get_update_ticket_fn,get_delete_ticket_fn
 
 
 #Ticket bot creation
 class TicketBot:
-    def __init__(self, db):
+    def __init__(self, db,key="Key"):
         # default prompt for bot
+        self.client=OpenAI(api_key=key)
         self.default = {
             "role": "system",
             "content": """
@@ -54,7 +55,7 @@ class TicketBot:
         while len(str(self.memory)) > 3500:
             self.memory=self.memory[3:]
             self.memory.append(self.default)
-        response = openai.chat.completions.create(
+        response = self.client.chat.completions.create(
             model="gpt-3.5-turbo-0613",
             temperature=0,
             messages=self.memory,
@@ -64,7 +65,7 @@ class TicketBot:
 
     # follow call for openai
     def make_system_request(self):
-        response = openai.chat.completions.create(
+        response = self.client.chat.completions.create(
             model="gpt-3.5-turbo-0613",
             temperature=0,
             messages=self.memory,
